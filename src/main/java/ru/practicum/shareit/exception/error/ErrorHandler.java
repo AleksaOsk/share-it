@@ -1,6 +1,5 @@
 package ru.practicum.shareit.exception.error;
 
-import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -35,20 +34,4 @@ public class ErrorHandler {
     public ErrorResponse handleThrowable(final Throwable e) {
         return new ErrorResponse(e.getMessage());
     }
-}
-
-@Getter
-class ErrorResponse {
-    private final String error;
-    private String description;
-
-    public ErrorResponse(String error, String description) {
-        this.error = error;
-        this.description = description;
-    }
-
-    public ErrorResponse(String error) {
-        this.error = error;
-    }
-
 }
