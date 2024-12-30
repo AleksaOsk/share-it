@@ -92,7 +92,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public void deleteItem(Long id) {
         log.info("Пришел запрос на удаление вещи с id {}", id);
-        checkId(id);
         itemRepository.deleteItem(id);
     }
 

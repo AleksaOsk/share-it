@@ -27,10 +27,10 @@ public final class UserMapper {
     }
 
     public static User updateMapToUser(User user, UserUpdateRequestDto userUpdateRequestDTO) {
-        if (userUpdateRequestDTO.hasName()) {
+        if (userUpdateRequestDTO.getName() != null && !userUpdateRequestDTO.getName().isBlank()) {
             user.setName(userUpdateRequestDTO.getName());
         }
-        if (userUpdateRequestDTO.hasEmail()) {
+        if (userUpdateRequestDTO.getEmail() != null && !userUpdateRequestDTO.getEmail().isBlank()) {
             user.setEmail(userUpdateRequestDTO.getEmail());
         }
 

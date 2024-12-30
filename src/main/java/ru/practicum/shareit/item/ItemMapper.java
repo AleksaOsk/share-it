@@ -29,13 +29,13 @@ public final class ItemMapper {
     }
 
     public static Item updateMapToItem(Item item, ItemUpdateRequestDto itemUpdateRequestDto) {
-        if (itemUpdateRequestDto.hasName()) {
+        if (itemUpdateRequestDto.getName() != null && !itemUpdateRequestDto.getName().isBlank()) {
             item.setName(itemUpdateRequestDto.getName());
         }
-        if (itemUpdateRequestDto.hasDescription()) {
+        if (itemUpdateRequestDto.getDescription() != null && !itemUpdateRequestDto.getDescription().isBlank()) {
             item.setDescription(itemUpdateRequestDto.getDescription());
         }
-        if (itemUpdateRequestDto.hasAvailable()) {
+        if (itemUpdateRequestDto.getAvailable() != null) {
             item.setIsAvailable(itemUpdateRequestDto.getAvailable());
         }
 

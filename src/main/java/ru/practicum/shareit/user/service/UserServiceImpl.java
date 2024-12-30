@@ -70,7 +70,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long id) {
         log.info("Пришел запрос на удаление пользователя с id {}", id);
-        checkId(id);
         userRepository.deleteUser(id);
     }
 
