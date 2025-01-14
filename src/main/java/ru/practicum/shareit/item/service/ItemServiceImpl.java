@@ -3,16 +3,19 @@ package ru.practicum.shareit.item.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemMapper;
+import ru.practicum.shareit.item.comment.CommentRepository;
 import ru.practicum.shareit.item.dto.ItemReqDto;
 import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.dto.ItemUpdateRequestDto;
+import ru.practicum.shareit.item.dto.ItemWithCommentsResponseDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
+import ru.practicum.shareit.validation.Validator;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,22 +28,23 @@ import java.util.stream.Collectors;
 public class ItemServiceImpl implements ItemService {
     private ItemRepository itemRepository;
     private UserRepository userRepository;
+    private CommentRepository commentRepository;
+    private BookingRepository bookingRepository;
 
     @Override
     public ItemResponseDto addNewItem(Long userId, ItemReqDto itemReqDto) {
-        log.info("Пришел запрос на создание новой вещи с названием {} от пользователя с id {}",
-                itemReqDto.getName(), userId);
-        checkUserId(userId);
-        checkName(itemReqDto.getName());
-        checkDescription(itemReqDto.getDescription());
-        checkAvailable(itemReqDto.getAvailable());
+        log.info("Пришел запрос на создание новой вещи от пользователя с id {}", userId);
+        Validator.checkName(itemReqDto.getName());
+        Validator.checkDescription(itemReqDto.getDescription());
+        Validator.checkAvailable(itemReqDto.getAvailable());
+        Optional<User> userOpt = userRepository.findById(userId);
+        Validator.checkUserId(userOpt);
 
-        Optional<User> userOpt = userRepository.getUser(userId);
         User user = userOpt.get();
 
         Item item = ItemMapper.mapToItem(itemReqDto);
         item.setOwner(user);
-        item = itemRepository.addNewItem(item);
+        item = itemRepository.save(item);
 
         return ItemMapper.mapToItemDto(item);
     }
@@ -48,30 +52,34 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemResponseDto updateItem(Long userId, Long id, ItemUpdateRequestDto itemReqDto) {
         log.info("Пришел запрос на обновление вещи с id {} от пользователя с id {}", id, userId);
-        checkUserId(userId);
-        checkId(id);
+        Validator.checkUserId(userRepository.findById(userId));
+        Optional<Item> itemOpt = itemRepository.findById(id);
+        Validator.checkItemId(itemOpt);
 
-        Optional<Item> itemOpt = itemRepository.getItem(id);
         Item item = itemOpt.get();
         Item itemNew = ItemMapper.updateMapToItem(item, itemReqDto);
-        item = itemRepository.updateItem(itemNew);
+        item = itemRepository.save(itemNew);
 
         return ItemMapper.mapToItemDto(item);
     }
 
     @Override
-    public ItemResponseDto getItem(Long id) {
+    public ItemWithCommentsResponseDto getItem(Long userId, Long id) {
         log.info("Пришел запрос на получение вещи с id {}", id);
-        return itemRepository.getItem(id)
-                .map(ItemMapper::mapToItemDto)
+        ItemWithCommentsResponseDto itemResponseDto = itemRepository.findById(id)
+                .map(ItemMapper::mapToItemWithCommentsDto)
                 .orElseThrow(() -> new NotFoundException("Вещь не найден с id = " + id));
+        itemResponseDto.setComments(commentRepository.findByItemId(id));
+        itemResponseDto.setLastBooking(bookingRepository.findLastBooking(id));
+        itemResponseDto.setNextBooking(bookingRepository.findNextBooking(id));
+        return itemResponseDto;
     }
 
     @Override
     public Collection<ItemResponseDto> getAllItemsOwner(Long userId) {
         log.info("Пришел запрос на получение всех вещей пользователя с id {}", userId);
-        checkUserId(userId);
-        return itemRepository.getAllItemsOwner(userId)
+        Validator.checkUserId(userRepository.findById(userId));
+        return itemRepository.findByOwnerId(userId)
                 .stream()
                 .map(ItemMapper::mapToItemDto)
                 .collect(Collectors.toList());
@@ -83,7 +91,8 @@ public class ItemServiceImpl implements ItemService {
         if (text == null || text.isBlank()) {
             return new ArrayList<>();
         }
-        return itemRepository.getItemsByText(text)
+        return itemRepository
+                .findByNameOrDescriptionContainingIgnoreCase(text)
                 .stream()
                 .map(ItemMapper::mapToItemDto)
                 .collect(Collectors.toList());
@@ -92,38 +101,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public void deleteItem(Long id) {
         log.info("Пришел запрос на удаление вещи с id {}", id);
-        itemRepository.deleteItem(id);
-    }
-
-    private void checkName(String name) {
-        if (name == null || name.isBlank() || name.isEmpty()) {
-            throw new ValidationException("Имя должно быть указано");
-        }
-    }
-
-    private void checkId(long id) {
-        if (itemRepository.getItem(id).isEmpty()) {
-            throw new NotFoundException("Вещь с таким id не существует");
-        }
-    }
-
-    private void checkDescription(String description) {
-        if (description == null || description.isBlank()) {
-            throw new ValidationException("Описание должно быть указано");
-        } else if (description.length() > 200) {
-            throw new ValidationException("Описание должно быть не более 200 символов");
-        }
-    }
-
-    private void checkAvailable(Boolean available) {
-        if (available == null) {
-            throw new ValidationException("Доступность вещи должна быть указана");
-        }
-    }
-
-    private void checkUserId(long id) {
-        if (userRepository.getUser(id).isEmpty()) {
-            throw new NotFoundException("Пользователь с таким id не существует");
-        }
+        itemRepository.deleteById(id);
     }
 }
