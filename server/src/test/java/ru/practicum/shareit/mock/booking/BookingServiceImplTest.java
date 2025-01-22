@@ -12,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.State;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.service.BookingServiceImpl;
@@ -45,7 +46,7 @@ public class BookingServiceImplTest {
 
     private User booker, owner;
     private Item item1;
-    private Booking booking;
+    private Booking booking, booking2, booking3;
     private BookingRequestDto bookingRequestDto1;
     private ItemRequest itemRequest;
 
@@ -58,14 +59,24 @@ public class BookingServiceImplTest {
                 LocalDateTime.of(2025, 11, 10, 12, 00, 00));
         item1 = new Item(1L, "item name1", "item description1", true, owner, itemRequest);
 
-        bookingRequestDto1 = new BookingRequestDto(LocalDateTime.of(2025, 12, 10, 12, 00, 00),
-                LocalDateTime.of(2025, 12, 12, 12, 00, 00),
+        bookingRequestDto1 = new BookingRequestDto(LocalDateTime.of(2025, 1, 10, 12, 00, 00),
+                LocalDateTime.of(2025, 2, 12, 12, 00, 00),
                 item1.getId());
         booking = new Booking(
                 1L,
                 bookingRequestDto1.getStart(),
                 bookingRequestDto1.getEnd(),
                 item1, booker, Status.WAITING);
+        booking2 = new Booking(
+                2L,
+                LocalDateTime.now().minusYears(1),
+                LocalDateTime.now().minusMonths(6),
+                item1, booker, Status.APPROVED);
+        booking3 = new Booking(
+                3L,
+                LocalDateTime.now().plusMonths(1),
+                LocalDateTime.now().plusMonths(6),
+                item1, booker, Status.APPROVED);
     }
 
     @Test
@@ -169,6 +180,67 @@ public class BookingServiceImplTest {
     }
 
     @Test
+    void searchBookingsForOwnerWithWaiting() {
+        String stateParam = "waiting";
+        Integer from = 0;
+        Integer size = 10;
+        Pageable pageable = PageRequest.of(from, size, Sort.by("startDate").descending());
+        when(bookingRepository.findByBookerIdAndStatus(booker.getId(), State.getState(stateParam), pageable))
+                .thenReturn(List.of(booking));
+        List<BookingResponseDto> bookings = bookingService.getAllUserBookings(booker.getId(), stateParam, from, size);
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking.getId(), bookings.get(0).getId());
+        assertEquals(booking.getBooker().getId(), booker.getId());
+        verify(bookingRepository).findByBookerIdAndStatus(booker.getId(), State.getState(stateParam), pageable);
+    }
+
+    @Test
+    void searchBookingsForOwnerWithCurrent() {
+        String stateParam = "current";
+        Integer from = 0;
+        Integer size = 10;
+        when(bookingRepository.findCurrentBookings(booker.getId(), size, from))
+                .thenReturn(List.of(booking));
+        List<BookingResponseDto> bookings = bookingService.getAllUserBookings(booker.getId(), stateParam, from, size);
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking.getId(), bookings.get(0).getId());
+        assertEquals(booking.getBooker().getId(), booker.getId());
+        verify(bookingRepository).findCurrentBookings(booker.getId(), size, from);
+    }
+
+    @Test
+    void searchBookingsForOwnerWithFuture() {
+        String stateParam = "future";
+        Integer from = 0;
+        Integer size = 10;
+        when(bookingRepository.findFutureBookings(booker.getId(), size, from))
+                .thenReturn(List.of(booking3));
+        List<BookingResponseDto> bookings = bookingService.getAllUserBookings(booker.getId(), stateParam, from, size);
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking3.getId(), bookings.get(0).getId());
+        assertEquals(booking3.getBooker().getId(), booker.getId());
+        verify(bookingRepository).findFutureBookings(booker.getId(), size, from);
+    }
+
+    @Test
+    void searchBookingsForOwnerWithPast() {
+        String stateParam = "past";
+        Integer from = 0;
+        Integer size = 10;
+        when(bookingRepository.findPastBookings(booker.getId(), size, from))
+                .thenReturn(List.of(booking2));
+        List<BookingResponseDto> bookings = bookingService.getAllUserBookings(booker.getId(), stateParam, from, size);
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking2.getId(), bookings.get(0).getId());
+        assertEquals(booking2.getBooker().getId(), booker.getId());
+        verify(bookingRepository).findPastBookings(booker.getId(), size, from);
+    }
+
+    @Test
     void searchBookingsForBookedItemsOwnerDefaultState() {
         String stateParam = "all";
         Integer from = 0;
@@ -180,6 +252,63 @@ public class BookingServiceImplTest {
         assertEquals(booking.getId(), bookings.get(0).getId());
         assertEquals(booking.getItem().getOwner().getId(), owner.getId());
         verify(bookingRepository).findAllBookingsOwnerItems(owner.getId(), size, from);
+    }
+
+    @Test
+    void searchBookingsForBookedItemsOwnerRejected() {
+        booking.setStatus(Status.REJECTED);
+        String stateParam = "rejected";
+        Integer from = 0;
+        Integer size = 10;
+        when(bookingRepository.findBookingsOwnerItems(owner.getId(), State.getState(stateParam), size, from)).thenReturn(List.of(booking));
+        List<BookingResponseDto> bookings = bookingService.getBookedItemsOwner(owner.getId(), stateParam, from, size);
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking.getId(), bookings.get(0).getId());
+        assertEquals(booking.getStatus(), bookings.get(0).getStatus());
+        verify(bookingRepository).findBookingsOwnerItems(owner.getId(), State.getState(stateParam), size, from);
+    }
+
+    @Test
+    void searchBookingsForBookedItemsOwnerCurrent() {
+        String stateParam = "current";
+        Integer from = 0;
+        Integer size = 10;
+        when(bookingRepository.findCurrentBookingsOwnerItems(owner.getId(), size, from)).thenReturn(List.of(booking));
+        List<BookingResponseDto> bookings = bookingService.getBookedItemsOwner(owner.getId(), stateParam, from, size);
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking.getId(), bookings.get(0).getId());
+        assertEquals(booking.getStatus(), bookings.get(0).getStatus());
+        verify(bookingRepository).findCurrentBookingsOwnerItems(owner.getId(), size, from);
+    }
+
+    @Test
+    void searchBookingsForBookedItemsOwnerFuture() {
+        String stateParam = "future";
+        Integer from = 0;
+        Integer size = 10;
+        when(bookingRepository.findFutureBookingsOwnerItems(owner.getId(), size, from)).thenReturn(List.of(booking2));
+        List<BookingResponseDto> bookings = bookingService.getBookedItemsOwner(owner.getId(), stateParam, from, size);
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking2.getId(), bookings.get(0).getId());
+        assertEquals(booking2.getStatus(), bookings.get(0).getStatus());
+        verify(bookingRepository).findFutureBookingsOwnerItems(owner.getId(), size, from);
+    }
+
+    @Test
+    void searchBookingsForBookedItemsOwnerPast() {
+        String stateParam = "past";
+        Integer from = 0;
+        Integer size = 10;
+        when(bookingRepository.findPastBookingsOwnerItems(owner.getId(), size, from)).thenReturn(List.of(booking3));
+        List<BookingResponseDto> bookings = bookingService.getBookedItemsOwner(owner.getId(), stateParam, from, size);
+
+        assertEquals(1, bookings.size());
+        assertEquals(booking3.getId(), bookings.get(0).getId());
+        assertEquals(booking3.getStatus(), bookings.get(0).getStatus());
+        verify(bookingRepository).findPastBookingsOwnerItems(owner.getId(), size, from);
     }
 
     @Test
@@ -203,5 +332,11 @@ public class BookingServiceImplTest {
 
         assertThrows(NotFoundException.class, () -> bookingService.addNewBooking(booker.getId(), bookingRequestDto1));
         verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void deleteBoking() {
+        bookingService.deleteBooking(booking.getId());
+        verify(bookingRepository).deleteById(booking.getId());
     }
 }

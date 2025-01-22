@@ -35,10 +35,6 @@ public class RequestServiceImplTest {
     @InjectMocks
     private ItemRequestServiceImpl requestService;
     @Mock
-    private UserService userService;
-    @Mock
-    private ItemService itemService;
-    @Mock
     private ItemRequestRepository itemRequestRepository;
     @Mock
     private UserRepository userRepository;
@@ -58,7 +54,7 @@ public class RequestServiceImplTest {
 
         itemRequestDto = new ItemRequestDto("description");
         itemRequest = new ItemRequest(1L, requestor, itemRequestDto.getDescription(), LocalDateTime.now());
-        itemResponse = new ItemRequestDto(1L, requestor, itemRequestDto.getDescription(), LocalDateTime.now());
+        itemResponse = ItemRequestMapper.mapToItemRequestDto(itemRequest);
 
         item = new Item(
                 1L,

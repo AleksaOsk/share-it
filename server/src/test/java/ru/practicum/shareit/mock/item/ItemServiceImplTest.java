@@ -11,6 +11,7 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.comment.Comment;
 import ru.practicum.shareit.item.comment.CommentRepository;
 import ru.practicum.shareit.item.comment.dto.CommentRequestDto;
@@ -24,6 +25,7 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.item.service.ItemServiceImpl;
 import ru.practicum.shareit.request.ItemRequestRepository;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
@@ -55,14 +57,15 @@ public class ItemServiceImplTest {
     private ItemServiceImpl itemService;
 
     private User user, user2;
-    private Item item, item2, itemUpdate;
-    private ItemReqDto itemReqDto, itemReqDto2;
+    private Item item, item2, itemUpdate, item3;
+    private ItemReqDto itemReqDto, itemReqDto2, itemReqDto3;
     private ItemUpdateRequestDto updatedRequestDto;
-    private ItemResponseDto itemResponse, itemResponse2, updatedItemResponse;
+    private ItemResponseDto itemResponse, itemResponse2, updatedItemResponse, itemResponse3;
     private Comment comment, comment2;
     private CommentRequestDto commentDto, commentDto2;
     private CommentResponseDto commentResponse, commentResponse2;
     private Booking booking;
+    private ItemRequest itemRequest;
 
     @BeforeEach
     void setUp() {
@@ -81,31 +84,26 @@ public class ItemServiceImplTest {
                 itemReqDto.getAvailable(),
                 user,
                 null);
-        itemResponse = new ItemResponseDto(
-                item.getId(),
-                item.getName(),
-                item.getDescription(),
-                item.getIsAvailable(),
-                item.getRequest());
+        itemResponse = ItemMapper.mapToItemDto(item);
 
         itemReqDto2 = new ItemReqDto(
                 "item2 name",
                 "description2",
                 true,
                 null);
-        item2 = new Item(
-                2L,
-                itemReqDto2.getName(),
-                itemReqDto2.getDescription(),
-                itemReqDto2.getAvailable(),
-                user,
-                null);
-        itemResponse2 = new ItemResponseDto(
-                item2.getId(),
-                item2.getName(),
-                item2.getDescription(),
-                item2.getIsAvailable(),
-                item2.getRequest());
+        item2 = ItemMapper.mapToItem(itemReqDto2);
+        item2.setId(2L);
+        itemResponse2 = ItemMapper.mapToItemDto(item2);
+
+        itemRequest = new ItemRequest(1L, user2, "description", LocalDateTime.now());
+        itemReqDto3 = new ItemReqDto(
+                "item3 name",
+                "description3",
+                true,
+                1L);
+        item3 = ItemMapper.mapToItem(itemReqDto3);
+        item3.setId(3L);
+        itemResponse3 = ItemMapper.mapToItemDto(item3);
 
         updatedRequestDto = new ItemUpdateRequestDto(
                 "update item name",
@@ -178,6 +176,27 @@ public class ItemServiceImplTest {
     }
 
     @Test
+    void createItemWithItemRequest() {
+        when(itemRepository.save(any(Item.class)))
+                .thenReturn(item3);
+        when(userRepository.findById(anyLong()))
+                .thenReturn(Optional.ofNullable(user));
+        when(itemRequestRepository.findById(anyLong()))
+                .thenReturn(Optional.ofNullable(itemRequest));
+        ItemResponseDto actualItemDto = itemService.addNewItem(1L, itemReqDto3);
+        assertEquals(itemReqDto3.getName(), actualItemDto.getName());
+
+        ArgumentCaptor<Item> itemCaptor = ArgumentCaptor.forClass(Item.class);
+        verify(itemRepository).save(itemCaptor.capture());
+        Item capturedItem = itemCaptor.getValue();
+        assertEquals(user, capturedItem.getOwner());
+
+        verify(userRepository).findById(user.getId());
+        verify(itemRepository).save(any(Item.class));
+    }
+
+
+    @Test
     void updatedItem() {
         when(userRepository.findById(anyLong()))
                 .thenReturn(Optional.ofNullable(user));
@@ -243,6 +262,12 @@ public class ItemServiceImplTest {
     @Test
     void searchItemsWhenTextIsEmpty() {
         List<ItemResponseDto> actualItems = itemService.getItemsByText("");
+        assertEquals(0, actualItems.size());
+    }
+
+    @Test
+    void searchItemsWhenTextIsNull() {
+        List<ItemResponseDto> actualItems = itemService.getItemsByText(null);
         assertEquals(0, actualItems.size());
     }
 
