@@ -7,6 +7,7 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.validator.BookingValidator;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.comment.Comment;
 import ru.practicum.shareit.item.comment.CommentMapper;
 import ru.practicum.shareit.item.comment.CommentRepository;
@@ -35,7 +36,7 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new NotFoundException("Пользователя с id = " + userId + " не существует"));
         Booking booking = bookingRepository.findByBookerIdAndItemId(userId, itemId)
                 .orElseThrow(() ->
-                        new NotFoundException("Пользователь с id " + userId + " не бронировал вещь с id " + itemId));
+                        new ValidationException("Пользователь с id " + userId + " не бронировал вещь с id " + itemId));
         BookingValidator.checkBooking(booking);
 
         Comment comment = CommentMapper.mapToComment(commentRequestDto);
