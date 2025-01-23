@@ -79,8 +79,6 @@ public class CommentServiceImplTest {
 
     @Test
     void createCommentWhenItemNotFound() {
-        when(userRepository.findById(user.getId()))
-                .thenReturn(Optional.ofNullable(user));
         when(itemRepository.findById(item.getId()))
                 .thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> commentService.addNewComment(item.getId(), user.getId(), commentRequestDto));
@@ -95,7 +93,7 @@ public class CommentServiceImplTest {
                 .thenReturn(Optional.of(item));
         when(bookingRepository.findByBookerIdAndItemId(user.getId(), item.getId()))
                 .thenReturn(Optional.empty());
-        assertThrows(ValidationException.class, () -> commentService.addNewComment(item.getId(), user.getId(), commentRequestDto));
+        assertThrows(NotFoundException.class, () -> commentService.addNewComment(item.getId(), user.getId(), commentRequestDto));
         verify(commentRepository, never()).save(any(Comment.class));
     }
 
