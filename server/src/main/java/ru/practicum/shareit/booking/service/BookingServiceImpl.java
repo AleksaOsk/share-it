@@ -15,6 +15,7 @@ import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.validator.BookingValidator;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
@@ -65,7 +66,7 @@ public class BookingServiceImpl implements BookingService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не существует"));
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователя с id = " + userId + " не существует"));
+                .orElseThrow(() -> new ValidationException("Пользователя с id = " + userId + " не существует"));
 
         if (BookingValidator.checkIsOwner(user, item)) {
             if (approved) {
