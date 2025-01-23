@@ -12,8 +12,6 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.user.validator.UserValidator;
 
-import java.util.Optional;
-
 @Slf4j
 @Service
 @AllArgsConstructor
@@ -34,9 +32,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDto updateUser(Long id, UserUpdateRequestDto userRequestDTO) {
         log.info("Пришел запрос на изменение пользователя с id {}", id);
-        Optional<User> userOpt = userRepository.findById(id);
-        UserValidator.checkUserId(userOpt);
-        User user = userOpt.get();
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователя с id = " + id + " не существует"));
 
         String email = userRequestDTO.getEmail();
         if (email != null && !email.equals(user.getEmail())) {
