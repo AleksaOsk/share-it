@@ -13,17 +13,13 @@ import ru.practicum.shareit.item.dto.ItemUpdateRequestDto;
 import ru.practicum.shareit.item.dto.ItemWithCommentsResponseDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.item.validator.ItemValidator;
 import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
-import ru.practicum.shareit.request.validator.ItemRequestValidator;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
-import ru.practicum.shareit.user.validator.UserValidator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,17 +35,16 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemResponseDto addNewItem(Long userId, ItemReqDto itemReqDto) {
         log.info("Пришел запрос на создание новой вещи от пользователя с id {}", userId);
-        Optional<User> userOpt = userRepository.findById(userId);
-        UserValidator.checkUserId(userOpt);
-        User user = userOpt.get();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователя с id = " + userId + " не существует"));
 
         Item item = ItemMapper.mapToItem(itemReqDto);
 
         if (itemReqDto.getRequestId() != null) {
-            Optional<ItemRequest> reqOpt = itemRequestRepository.findById(itemReqDto.getRequestId());
-            ItemRequestValidator.checkItemRequestId(reqOpt);
-            ItemRequest itemRequest = reqOpt.get();
-            item.setRequest(itemRequest);
+            ItemRequest req = itemRequestRepository.findById(itemReqDto.getRequestId())
+                    .orElseThrow(()
+                            -> new NotFoundException("Запроса с id = " + itemReqDto.getRequestId() + " не существует"));
+            item.setRequest(req);
         }
 
         item.setOwner(user);
@@ -61,11 +56,11 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemResponseDto updateItem(Long userId, Long id, ItemUpdateRequestDto itemReqDto) {
         log.info("Пришел запрос на обновление вещи с id {} от пользователя с id {}", id, userId);
-        UserValidator.checkUserId(userRepository.findById(userId));
-        Optional<Item> itemOpt = itemRepository.findById(id);
-        ItemValidator.checkItemId(itemOpt);
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователя с id = " + userId + " не существует"));
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + id + " не существует"));
 
-        Item item = itemOpt.get();
         Item itemNew = ItemMapper.updateMapToItem(item, itemReqDto);
         item = itemRepository.save(itemNew);
 
@@ -87,7 +82,8 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemResponseDto> getAllItemsOwner(Long userId) {
         log.info("Пришел запрос на получение всех вещей пользователя с id {}", userId);
-        UserValidator.checkUserId(userRepository.findById(userId));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователя с id = " + userId + " не существует"));
         return itemRepository.findByOwnerId(userId)
                 .stream()
                 .map(ItemMapper::mapToItemDto)

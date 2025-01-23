@@ -24,13 +24,13 @@ public class BookingController {
 
     @GetMapping
     public ResponseEntity<Object> getBookings(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                              @RequestParam(name = "state", defaultValue = "all") String stateParam,
-                                              @PositiveOrZero @RequestParam(name = "from", defaultValue = "0") Integer from,
-                                              @Positive @RequestParam(name = "size", defaultValue = "10") Integer size) {
-        BookingState state = BookingState.from(stateParam)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown state: " + stateParam));
-        log.info("PЗапрос бронирования для пользователя {}, userId={}, from={}, size={}", stateParam, userId, from, size);
-        return client.getBookings(userId, state, from, size);
+                                              @RequestParam(defaultValue = "all") String state,
+                                              @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
+                                              @Positive @RequestParam(defaultValue = "10") Integer size) {
+        BookingState stateParam = BookingState.from(state)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown state: " + state));
+        log.info("PЗапрос бронирования для пользователя {}, userId={}, from={}, size={}", state, userId, from, size);
+        return client.getBookings(userId, stateParam, from, size);
     }
 
     @PostMapping
@@ -50,7 +50,7 @@ public class BookingController {
     @PatchMapping("/{bookingId}") //Подтверждение или отклонение запроса на бронирование
     public ResponseEntity<Object> addApprove(@RequestHeader("X-Sharer-User-Id") Long userId,
                                              @PathVariable Long bookingId,
-                                             @RequestParam(name = "approved")
+                                             @RequestParam
                                              @NotNull(message = "Бронирование должно быть подтверждено или отклонено")
                                              Boolean approved) {
         log.info("Запрос бронирования {}, для userId={} со статусом подверждения {}", bookingId, userId, approved);

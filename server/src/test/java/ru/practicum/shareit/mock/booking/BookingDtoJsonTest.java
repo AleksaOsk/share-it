@@ -56,28 +56,28 @@ public class BookingDtoJsonTest {
     @Test
     void deserializeBookingDto() throws IOException {
         String jsonString = "{" +
-                            "\"id\": 1," +
-                            "\"start\": \"2025-02-12T12:00:00\"," +
-                            "\"end\": \"2025-02-17T12:00:00\"," +
-                            "\"item\": {" +
-                            "\"id\": 1," +
-                            "\"name\": \"item1 name\"," +
-                            "\"description\": \"item1 description\"," +
-                            "\"isAvailable\": true," +
-                            "\"owner\": {" +
-                            "\"id\": 1," +
-                            "\"name\": \"name u1\"," +
-                            "\"email\": \"u1@mail.ru\"" +
-                            "}," +
-                            "\"request\": null" +
-                            "}," +
-                            "\"booker\": {" +
-                            "\"id\": 2," +
-                            "\"name\": \"name b2\"," +
-                            "\"email\": \"b2@mail.ru\"" +
-                            "}," +
-                            "\"status\": \"WAITING\"" +
-                            "}";
+                "\"id\": 1," +
+                "\"start\": \"2025-02-12T12:00:00\"," +
+                "\"end\": \"2025-02-17T12:00:00\"," +
+                "\"item\": {" +
+                "\"id\": 1," +
+                "\"name\": \"item1 name\"," +
+                "\"description\": \"item1 description\"," +
+                "\"isAvailable\": true," +
+                "\"owner\": {" +
+                "\"id\": 1," +
+                "\"name\": \"name u1\"," +
+                "\"email\": \"u1@mail.ru\"" +
+                "}," +
+                "\"request\": null" +
+                "}," +
+                "\"booker\": {" +
+                "\"id\": 2," +
+                "\"name\": \"name b2\"," +
+                "\"email\": \"b2@mail.ru\"" +
+                "}," +
+                "\"status\": \"WAITING\"" +
+                "}";
         BookingResponseDto deserializedBookingDto = json.parse(jsonString).getObject();
 
 

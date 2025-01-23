@@ -50,4 +50,10 @@ public class ErrorHandler {
         ErrorResponse errorResponse = new ErrorResponse("Указаны некорректные данные. " + response);
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST); //400
     }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleThrowable(final Throwable e) {
+        return new ErrorResponse(e.getMessage());
+    }
 }

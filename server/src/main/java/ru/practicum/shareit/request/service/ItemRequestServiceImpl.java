@@ -14,12 +14,10 @@ import ru.practicum.shareit.request.dto.ItemRequestWithItemsDto;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
-import ru.practicum.shareit.user.validator.UserValidator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,10 +33,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public ItemRequestDto addNewItemRequest(Long userId, ItemRequestDto itemRequestDto) {
         log.info("Пришел запрос на создание нового запроса вещи от пользователя с id {} с названием {}",
                 userId, itemRequestDto.getDescription());
-        Optional<User> userOpt = userRepository.findById(userId);
-        UserValidator.checkUserId(userOpt);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователя с id = " + userId + " не существует"));
 
-        User user = userOpt.get();
         ItemRequest itemRequest = new ItemRequest();
         itemRequest.setCreated(LocalDateTime.now());
         itemRequest.setDescription(itemRequestDto.getDescription());
@@ -51,7 +48,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     public List<ItemRequestWithItemsDto> getAllItemRequestsOwner(Long userId) {
         log.info("Пришел запрос на получение всех своих запросов вещей от пользователя с id {}", userId);
-        UserValidator.checkUserId(userRepository.findById(userId));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователя с id = " + userId + " не существует"));
         List<ItemRequestWithItemsDto> listReq = itemRequestRepository.findAllByRequestorIdOrderByCreatedDesc(userId)
                 .stream()
                 .map((ItemRequest itemRequest) ->
